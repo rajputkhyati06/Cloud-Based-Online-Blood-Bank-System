@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Live Stock & Emergency Search | Cloud Blood Bank{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container text-center">
+        <div class="d-inline-flex align-items-center bg-danger bg-opacity-25 border border-danger rounded-pill px-3 py-1 mb-3">
+            <span class="badge bg-danger rounded-pill me-2">LIVE</span>
+            <small class="text-white fw-semibold">Cloud Database Synchronized Across Connected Hospitals</small>
+        </div>
+        <h1 class="hero-title">Every Second Counts.<br/><span class="text-danger">Save Lives</span> With Cloud Logistics.</h1>
+        <p class="hero-subtitle mx-auto">
+            Centralized 24x7 blood bank inventory, FIFO shelf-life management, and doctor-verified emergency broadcast network.
+        </p>
+        
+        <!-- Live Search Box -->
+        <div class="card shadow-lg border-0 mt-4 mx-auto" style="max-width: 750px; border-radius: 16px;">
+            <div class="card-body p-3">
+                <form action="{{ url_for('index') }}" method="GET" class="row g-2 align-items-center">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0 text-danger"><i class="fa-solid fa-location-dot"></i></span>
+                            <input type="text" name="city" class="form-control border-start-0 fw-semibold" list="homeHubSuggestions" value="{{ current_city }}" placeholder="Type or select city (e.g. Delhi, Jaipur, Mumbai)...">
+                            <datalist id="homeHubSuggestions">
+                                <option value="Delhi">Delhi-NCR Regional Hub</option>
+                                <option value="Jaipur">Jaipur Regional Hub (Rajasthan)</option>
+                                <option value="Noida">Noida Regional Hub (UP)</option>
+                                <option value="Lucknow">Lucknow Regional Hub (UP)</option>
+                                <option value="Mumbai">Mumbai Regional Hub (Maharashtra)</option>
+                                <option value="Chandigarh">Chandigarh Regional Hub</option>
+                                <option value="Bangalore">Bangalore Regional Hub</option>
+                                <option value="Pune">Pune Regional Hub</option>
+                                <option value="Agra">Agra Regional Hub (UP)</option>
+                                <option value="All">All Connected Hubs (Nationwide)</option>
+                            </datalist>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select name="blood_group" class="form-select">
+                            <option value="">All Blood Groups</option>
+                            {% for bg in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] %}
+                                <option value="{{ bg }}" {% if search_bg == bg %}selected{% endif %}>Blood Group: {{ bg }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-danger w-100 fw-bold">
+                            <i class="fa-solid fa-search me-1"></i>Search Stock
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Main Container -->
+<div class="container mb-5">
+    <!-- Active Emergency Alert Banner (if pending emergency exists) -->
+    {% if pending_emergencies %}
+    <div class="pulse-emergency mb-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap">
+            <div class="d-flex align-items-center">
+                <div class="bg-danger text-white rounded-circle p-3 me-3">
+                    <i class="fa-solid fa-truck-medical fa-2x"></i>
+                </div>
+                <div>
+                    <h5 class="text-danger fw-bold mb-1"><i class="fa-solid fa-bell me-1"></i>ACTIVE CRITICAL EMERGENCY ALERT</h5>
+                    <p class="mb-0 text-dark">
+                        <strong>{{ pending_emergencies[0].hospital_name }}</strong> urgently requires 
+                        <span class="badge bg-danger fs-6">{{ pending_emergencies[0].units_requested }} Units of {{ pending_emergencies[0].blood_group }}</span> 
+                        for trauma patient <em>{{ pending_emergencies[0].patient_name }}</em>.
+                    </p>
+                </div>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-danger fw-bold"><i class="fa-solid fa-hand-holding-medical me-1"></i>Respond as Donor</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Blood Groups Live Stock Meters with Regional Hub Selector -->
+    <div class="card border-0 shadow-sm p-3 mb-4 bg-white border-start border-4 border-danger" style="border-radius: 14px;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <h4 class="fw-bold mb-0 text-dark">
+                        <i class="fa-solid fa-cubes-stacked text-danger me-1"></i>Real-Time Cold Storage Inventory
+                    </h4>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 small">
+                        <i class="fa-solid fa-snowflake me-1"></i>2°C – 6°C Cold Chain
+                    </span>
+                    {% if search_bg %}
+                        <span class="badge bg-danger px-2 py-1 small"><i class="fa-solid fa-filter me-1"></i>Filtered: {{ search_bg }}</span>
+                        <a href="{{ url_for('index', city=current_city) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-xmark me-1"></i>Show All
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="text-muted small mt-1">
+                    <i class="fa-solid fa-truck-fast text-success me-1"></i>Safe Medical Transit Radius: <strong>≤ 25 km (Golden Hour Safe)</strong> &nbsp;|&nbsp;
+                    <i class="fa-solid fa-rotate text-primary me-1"></i>Auto-syncing with Cloud DBaaS
+                </div>
+            </div>
+            
+            <!-- Quick Hub Switcher Input Form -->
+            <form action="{{ url_for('index') }}" method="GET" class="d-flex align-items-center gap-2 m-0 flex-wrap">
+                {% if search_bg %}
+                    <input type="hidden" name="blood_group" value="{{ search_bg }}">
+                {% endif %}
+                <label class="fw-bold small text-dark mb-0 d-none d-sm-inline">
+                    <i class="fa-solid fa-location-dot text-danger me-1"></i>Showing Stock For:
+                </label>
+                <div class="input-group input-group-sm shadow-sm" style="min-width: 200px; max-width: 270px;">
+                    <input type="text" name="city" class="form-control border-danger fw-bold" list="quickCitySuggestions" value="{{ current_city }}" placeholder="Type city..." required>
+                    <datalist id="quickCitySuggestions">
+                        <option value="Delhi">📍 Delhi-NCR Hub</option>
+                        <option value="Jaipur">📍 Jaipur Hub (Raj)</option>
+                        <option value="Noida">📍 Noida Hub (UP)</option>
+                        <option value="Lucknow">📍 Lucknow Hub (UP)</option>
+                        <option value="Mumbai">📍 Mumbai Hub (MH)</option>
+                        <option value="Chandigarh">📍 Chandigarh Hub</option>
+                        <option value="All">🌐 All Regional Hubs</option>
+                    </datalist>
+                    <button type="submit" class="btn btn-danger fw-bold px-3"><i class="fa-solid fa-arrow-right me-1"></i>Set</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Blood Group Metric Boxes -->
+    <div class="row g-3 mb-5 {% if display_bgs|length == 1 %}justify-content-center{% endif %}">
+        {% for bg in display_bgs %}
+            {% set item = stock_dict.get(bg) %}
+            {% set count = item.total_units if item else 0 %}
+            {% set fac_list = facilities_by_bg.get(bg, []) %}
+
+            {% if display_bgs|length == 1 %}
+            <!-- Single Filtered Blood Group Card View -->
+            <div class="col-12 col-md-8 col-lg-5">
+                <div class="metric-card border-top border-4 {% if count > 2 %}border-success{% elif count > 0 %}border-warning{% else %}border-danger{% endif %} shadow-sm p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="blood-group-badge fs-2 px-3 py-2">{{ bg }}</div>
+                        <div class="text-end">
+                            <span class="display-5 fw-bold {% if count == 0 %}text-danger{% else %}text-dark{% endif %}">{{ count }}</span>
+                            <div class="small text-muted">Total Units in {{ current_city }} Fridge</div>
+                        </div>
+                    </div>
+                    <hr class="my-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-semibold">Availability Status:</span>
+                        {% if count == 0 %}
+                            <span class="badge bg-danger fs-6">OUT OF STOCK</span>
+                        {% elif count <= 2 %}
+                            <span class="badge bg-warning text-dark fs-6">CRITICAL LOW</span>
+                        {% else %}
+                            <span class="badge bg-success fs-6">AVAILABLE</span>
+                        {% endif %}
+                    </div>
+                    {% if item and item.earliest_expiry %}
+                        <div class="text-muted small mb-3">
+                            <i class="fa-solid fa-clock-rotate-left text-danger me-1"></i>Earliest FIFO Expiry: <strong>{{ item.earliest_expiry }}</strong>
+                        </div>
+                    {% endif %}
+
+                    {% if fac_list %}
+                    <div class="p-3 bg-light rounded-3 border text-start mb-3">
+                        <div class="small fw-bold text-dark mb-2">
+                            <i class="fa-solid fa-hospital text-danger me-1"></i>Connected Cold Storage Centers:
+                        </div>
+                        <div class="list-group list-group-flush small">
+                            {% for fac in fac_list %}
+                            <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0 py-1">
+                                <div>
+                                    <div class="fw-semibold text-dark">{{ fac.blood_bank_name }}</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;"><i class="fa-solid fa-clock me-1"></i>FIFO Exp: {{ fac.earliest_expiry }}</div>
+                                </div>
+                                <span class="badge bg-success fs-6">{{ fac.units }} Unit(s)</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <a href="{{ url_for('login') }}" class="btn btn-danger w-100 fw-bold shadow-sm py-2">
+                        <i class="fa-solid fa-bag-shopping me-1"></i>Reserve Blood Unit via Hospital Login
+                    </a>
+                    {% else %}
+                    <div class="alert alert-danger py-3 text-center mb-3">
+                        <i class="fa-solid fa-triangle-exclamation fa-2x mb-2 text-danger"></i>
+                        <h6 class="fw-bold mb-1">0 Units in Cold Storage for {{ current_city }}</h6>
+                        <p class="small text-muted mb-0">No connected facility currently holds {{ bg }} blood bags.</p>
+                    </div>
+                    <a href="{{ url_for('login') }}" class="btn btn-danger w-100 fw-bold shadow-sm py-2">
+                        <i class="fa-solid fa-tower-broadcast me-1"></i>Login to Trigger Donor Emergency Broadcast
+                    </a>
+                    {% endif %}
+
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('index', city=current_city) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fa-solid fa-boxes-stacked me-1"></i>View All 8 Blood Groups
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {% else %}
+            <!-- All 8 Blood Groups Standard Grid View -->
+            <div class="col-6 col-md-3">
+                <div class="metric-card border-top border-4 {% if count > 2 %}border-success{% elif count > 0 %}border-warning{% else %}border-danger{% endif %} h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="blood-group-badge">{{ bg }}</div>
+                            <div class="text-end">
+                                <span class="display-6 fw-bold {% if count == 0 %}text-danger{% else %}text-dark{% endif %}">{{ count }}</span>
+                                <div class="small text-muted">Units in Fridge</div>
+                            </div>
+                        </div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between align-items-center small">
+                            <span>Status:</span>
+                            {% if count == 0 %}
+                                <span class="badge bg-danger">OUT OF STOCK</span>
+                            {% elif count <= 2 %}
+                                <span class="badge bg-warning text-dark">CRITICAL LOW</span>
+                            {% else %}
+                                <span class="badge bg-success">AVAILABLE</span>
+                            {% endif %}
+                        </div>
+                        {% if item and item.earliest_expiry %}
+                            <div class="text-muted small mt-1">
+                                <i class="fa-solid fa-clock-rotate-left me-1"></i>Exp: {{ item.earliest_expiry }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% if count > 0 %}
+                        <div class="mt-2 pt-1 border-top text-muted" style="font-size: 0.75rem;">
+                            <i class="fa-solid fa-building-circle-check text-success me-1"></i>{{ fac_list|length }} Facility Center(s)
+                        </div>
+                    {% else %}
+                        <div class="mt-2 pt-1 border-top text-danger" style="font-size: 0.75rem;">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>Need Donor Backup
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- Blood Compatibility Matrix Section -->
+    <section id="compatibility" class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 16px;">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h4 class="fw-bold text-dark"><i class="fa-solid fa-code-branch text-danger me-2"></i>Smart Compatibility Matcher</h4>
+                <p class="text-muted">
+                    If an exact blood group is depleted, our clinical matrix guides attending physicians to safe cross-match donor groups:
+                </p>
+                <div class="p-3 bg-light rounded-3 mb-3 border">
+                    <h6 class="fw-bold text-danger mb-1"><i class="fa-solid fa-star me-1"></i>O-Negative (O-) is the Universal Donor</h6>
+                    <small class="text-muted">Can safely be transfused into ANY patient (A+, A-, B+, B-, AB+, AB-, O+, O-). Vital for crash-room resuscitations.</small>
+                </div>
+                <div class="p-3 bg-light rounded-3 border">
+                    <h6 class="fw-bold text-primary mb-1"><i class="fa-solid fa-crown me-1"></i>AB-Positive (AB+) is the Universal Recipient</h6>
+                    <small class="text-muted">Can receive red blood cells from any blood type safely when emergency supplies are strained.</small>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center mt-4 mt-lg-0">
+                <img src="{{ url_for('static', filename='images/blood_compatibility_chart.png') }}" 
+                     alt="Blood Compatibility Chart" 
+                     class="img-fluid rounded-3 shadow-sm border" 
+                     style="max-height: 380px;">
+                <div class="small text-muted mt-2">Matrix visualization generated and archived in project system.</div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,179 @@
+/* ==========================================================================
+   CLOUD-BASED ONLINE BLOOD BANK & EMERGENCY TRIAGE SYSTEM
+   Custom Modern Stylesheet (Medical Crimson Red & Navy Slate Theme)
+   ========================================================================== */
+
+:root {
+    --primary-red: #B91C1C;
+    --primary-red-hover: #991B1B;
+    --accent-red: #EF4444;
+    --navy-dark: #0F172A;
+    --navy-light: #1E293B;
+    --bg-light: #F8FAFC;
+    --text-dark: #1E293B;
+    --text-muted: #64748B;
+    --border-color: #E2E8F0;
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --card-hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+body {
+    font-family: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Custom Navbar */
+.navbar-custom {
+    background-color: var(--navy-dark);
+    border-bottom: 3px solid var(--primary-red);
+    padding: 0.8rem 1.5rem;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.35rem;
+    color: #FFFFFF !important;
+    letter-spacing: 0.5px;
+}
+
+.brand-badge {
+    background-color: var(--primary-red);
+    color: white;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    vertical-align: middle;
+    margin-left: 8px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 60%, #450A0A 100%);
+    color: white;
+    padding: 3.5rem 1.5rem;
+    border-radius: 0 0 20px 20px;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+.hero-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.hero-subtitle {
+    font-size: 1.15rem;
+    color: #CBD5E1;
+    margin-top: 1rem;
+    max-width: 700px;
+}
+
+/* Pulse Animation for Emergency Alert */
+.pulse-emergency {
+    background-color: #FEF2F2;
+    border: 2px solid var(--primary-red);
+    border-radius: 12px;
+    padding: 1rem;
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(185, 28, 28, 0.4); }
+    70% { box-shadow: 0 0 0 12px rgba(185, 28, 28, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(185, 28, 28, 0); }
+}
+
+/* Metric Cards */
+.metric-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    height: 100%;
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--card-hover-shadow);
+}
+
+.blood-group-badge {
+    display: inline-block;
+    width: 48px;
+    height: 48px;
+    line-height: 48px;
+    text-align: center;
+    border-radius: 50%;
+    background-color: #FEE2E2;
+    color: var(--primary-red);
+    font-weight: 800;
+    font-size: 1.2rem;
+    border: 2px solid #FCA5A5;
+}
+
+/* Status Badges */
+.badge-available {
+    background-color: #DCFCE7;
+    color: #166534;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 8px;
+}
+
+.badge-expiring {
+    background-color: #FEF3C7;
+    color: #92400E;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 8px;
+}
+
+.badge-emergency {
+    background-color: #FEE2E2;
+    color: #991B1B;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid #F87171;
+}
+
+/* Custom Buttons */
+.btn-emergency {
+    background-color: var(--primary-red);
+    color: white;
+    font-weight: 700;
+    border: none;
+    padding: 0.6rem 1.4rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.btn-emergency:hover {
+    background-color: var(--primary-red-hover);
+    color: white;
+}
+
+/* Toggle Switch */
+.form-check-input:checked {
+    background-color: #16A34A;
+    border-color: #16A34A;
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+    background-color: var(--navy-dark);
+    color: #94A3B8;
+    padding: 1.5rem 0;
+    border-top: 1px solid #334155;
+    font-size: 0.9rem;
+}

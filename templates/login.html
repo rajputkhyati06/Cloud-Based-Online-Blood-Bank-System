@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Portal Authentication | Cloud Blood Bank{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card border-0 shadow-lg" style="border-radius: 16px;">
+                <div class="card-body p-4 p-md-5">
+                    
+                    <!-- Role Navigation Tabs -->
+                    <ul class="nav nav-pills nav-fill mb-4 p-1 bg-light rounded-pill" id="loginTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill fw-bold {% if active_tab != 'standard' %}active bg-primary text-white{% else %}text-muted{% endif %}" id="hospital-tab" data-bs-toggle="pill" data-bs-target="#hospitalLogin" type="button" role="tab">
+                                <i class="fa-solid fa-hospital me-1"></i>Hospital Portal
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill fw-bold {% if active_tab == 'standard' %}active bg-danger text-white{% else %}text-muted{% endif %}" id="donor-tab" data-bs-toggle="pill" data-bs-target="#standardLogin" type="button" role="tab">
+                                <i class="fa-solid fa-user-shield me-1"></i>Donor / Admin
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="loginTabContent">
+                        
+                        <!-- ========================================================== -->
+                        <!-- TAB 1: HOSPITAL EMERGENCY DESK LOGIN (VERIFIED LICENSE ID) -->
+                        <!-- ========================================================== -->
+                        <div class="tab-pane fade {% if active_tab != 'standard' %}show active{% endif %}" id="hospitalLogin" role="tabpanel">
+                            <div class="text-center mb-3">
+                                <div class="bg-primary text-white rounded-circle d-inline-flex p-3 mb-2 shadow-sm">
+                                    <i class="fa-solid fa-hospital-user fa-2x"></i>
+                                </div>
+                                <h4 class="fw-bold text-dark mb-1">Hospital Emergency Desk</h4>
+                                <p class="text-muted small">Enter your State Health Registry License to identify facility</p>
+                            </div>
+
+                            <form action="{{ url_for('login') }}" method="POST">
+                                <input type="hidden" name="login_type" value="hospital">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-secondary">
+                                        <i class="fa-solid fa-certificate text-primary me-1"></i>Hospital Govt License Number
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="fa-solid fa-id-card text-primary"></i></span>
+                                        <input type="text" name="license_number" id="hospLicenseInput" class="form-control" list="hospitalLicenseList" placeholder="e.g. HOSP-DL-2024-8841" value="{{ fill_license or '' }}" oninput="updateHospitalPreview(this.value)" required>
+                                        <datalist id="hospitalLicenseList">
+                                            <option value="HOSP-DL-2024-8841">Indraprastha Apollo Hospital (Delhi)</option>
+                                            <option value="RAJ-MCI-HOSP-1994-082">SMS Medical College & Hospital (Jaipur)</option>
+                                            <option value="HOSP-DL-1998-0012">AIIMS Apex Trauma Center (Delhi)</option>
+                                        </datalist>
+                                    </div>
+                                    <div id="detectedHospBox" class="mt-2 p-2 rounded bg-primary bg-opacity-10 border border-primary small text-primary fw-bold d-none">
+                                        <i class="fa-solid fa-hospital me-1"></i>Verified Medical Facility: <span id="detectedHospName"></span>
+                                    </div>
+                                    <div class="form-text small text-muted">
+                                        <i class="fa-solid fa-shield-halved text-success me-1"></i>Verified against State Medical Registry to prevent unauthorized access.
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold text-secondary">
+                                        <i class="fa-solid fa-key text-muted me-1"></i>Emergency Desk Password
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="fa-solid fa-lock text-muted"></i></span>
+                                        <input type="password" name="password" id="hospPasswordInput" class="form-control" placeholder="••••••••" required>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
+                                    <i class="fa-solid fa-shield-check me-2"></i>Verify License & Open Triage Portal
+                                </button>
+                            </form>
+
+                            <!-- Hospital Demo Autofill Shortcuts -->
+                            <div class="mt-4 pt-3 border-top">
+                                <span class="small fw-bold text-muted d-block mb-2">
+                                    <i class="fa-solid fa-bolt text-warning me-1"></i>Hospital Demo 1-Click Autofill:
+                                </span>
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary text-start" onclick="fillHospitalCreds('HOSP-DL-2024-8841', 'apollo123')">
+                                        <i class="fa-solid fa-hospital me-2"></i><strong>Apollo Hospital Delhi:</strong> <code>HOSP-DL-2024-8841</code>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary text-start" onclick="fillHospitalCreds('RAJ-MCI-HOSP-1994-082', 'jaipur123')">
+                                        <i class="fa-solid fa-hospital me-2"></i><strong>SMS Hospital Jaipur:</strong> <code>RAJ-MCI-HOSP-1994-082</code>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ========================================================== -->
+                        <!-- TAB 2: DONOR & ADMIN PORTAL LOGIN                          -->
+                        <!-- ========================================================== -->
+                        <div class="tab-pane fade {% if active_tab == 'standard' %}show active{% endif %}" id="standardLogin" role="tabpanel">
+                            <div class="text-center mb-3">
+                                <div class="bg-danger text-white rounded-circle d-inline-flex p-3 mb-2 shadow-sm">
+                                    <i class="fa-solid fa-lock fa-2x"></i>
+                                </div>
+                                <h4 class="fw-bold text-dark mb-1">Donor & Admin Sign In</h4>
+                                <p class="text-muted small">Sign in using your registered email and password</p>
+                            </div>
+
+                            <form action="{{ url_for('login') }}" method="POST">
+                                <input type="hidden" name="login_type" value="standard">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-secondary">Email Address</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="fa-solid fa-envelope text-muted"></i></span>
+                                        <input type="email" name="email" id="emailInput" class="form-control" placeholder="user@example.com" value="{{ fill_email or '' }}" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold text-secondary">Password</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="fa-solid fa-key text-muted"></i></span>
+                                        <input type="password" name="password" id="passwordInput" class="form-control" placeholder="••••••••" required>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-danger w-100 py-2 fw-bold shadow-sm">
+                                    <i class="fa-solid fa-right-to-bracket me-2"></i>Sign In
+                                </button>
+                            </form>
+
+                            <!-- Donor / Admin Demo Autofill Shortcuts -->
+                            <div class="mt-4 pt-3 border-top">
+                                <span class="small fw-bold text-muted d-block mb-2">
+                                    <i class="fa-solid fa-bolt text-warning me-1"></i>Donor / Admin Quick Autofill:
+                                </span>
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-dark text-start" onclick="fillStandardCreds('admin@bloodbank.org', 'admin123')">
+                                        <i class="fa-solid fa-user-shield text-danger me-2"></i><strong>Admin:</strong> admin@bloodbank.org (Dr. Rajesh Varma)
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-dark text-start" onclick="fillStandardCreds('rahul.donor@gmail.com', 'donor123')">
+                                        <i class="fa-solid fa-hand-holding-heart text-success me-2"></i><strong>Hero Donor (O-):</strong> rahul.donor@gmail.com (Rahul)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <span class="text-muted small">New donor or hospital?</span> 
+                <a href="{{ url_for('register') }}" class="text-danger fw-bold small ms-1">Register Account</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const HOSP_MAP = {
+    'HOSP-DL-2024-8841': 'Indraprastha Apollo Hospital (Delhi)',
+    'RAJ-MCI-HOSP-1994-082': 'SMS Medical College & Hospital (Jaipur)',
+    'HOSP-DL-1998-0012': 'AIIMS Apex Trauma Center (Delhi)'
+};
+
+function updateHospitalPreview(lic) {
+    var box = document.getElementById('detectedHospBox');
+    var span = document.getElementById('detectedHospName');
+    if (!box || !span) return;
+    var trimmed = (lic || '').trim();
+    if (HOSP_MAP[trimmed]) {
+        span.textContent = HOSP_MAP[trimmed];
+        box.classList.remove('d-none');
+    } else {
+        box.classList.add('d-none');
+    }
+}
+
+function fillHospitalCreds(lic, pwd) {
+    document.getElementById('hospLicenseInput').value = lic;
+    document.getElementById('hospPasswordInput').value = pwd;
+    updateHospitalPreview(lic);
+}
+
+function fillStandardCreds(email, pwd) {
+    document.getElementById('emailInput').value = email;
+    document.getElementById('passwordInput').value = pwd;
+}
+
+// On page load check if fill_license was passed
+window.addEventListener('DOMContentLoaded', function() {
+    var licVal = document.getElementById('hospLicenseInput').value;
+    if (licVal) updateHospitalPreview(licVal);
+});
+</script>
+{% endblock %}

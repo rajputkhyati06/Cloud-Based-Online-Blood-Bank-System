@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Register | Cloud Blood Bank{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg" style="border-radius: 16px;">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <div class="bg-danger text-white rounded-circle d-inline-flex p-3 mb-2 shadow-sm">
+                            <i class="fa-solid fa-user-plus fa-2x"></i>
+                        </div>
+                        <h3 class="fw-bold text-dark">Join the Life-Saving Network</h3>
+                        <p class="text-muted small">Register as an Individual Donor or an Authorized Healthcare Facility</p>
+                    </div>
+
+                    <form action="{{ url_for('register') }}" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">Account Type (Role)</label>
+                            <select name="role" id="roleSelect" class="form-select" onchange="toggleRoleFields()" required>
+                                <option value="donor" selected>Blood Donor (Individual)</option>
+                                <option value="hospital">Hospital / Trauma Center</option>
+                            </select>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Full Name / Hospital Name</label>
+                                <input type="text" name="full_name" class="form-control" placeholder="e.g. Pooja Sharma" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Phone Number</label>
+                                <input type="text" name="phone" class="form-control" placeholder="+91-9876543210" required>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">City</label>
+                                <input type="text" name="city" class="form-control" placeholder="e.g. Delhi" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary">Email Address</label>
+                                <input type="email" name="email" class="form-control" placeholder="user@domain.com" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">Password</label>
+                            <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                        </div>
+
+                        <!-- Donor Specific Fields -->
+                        <div id="donorFields">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-secondary">Your Blood Group</label>
+                                <select name="blood_group" class="form-select">
+                                    {% for bg in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] %}
+                                        <option value="{{ bg }}">Blood Group {{ bg }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-check form-switch mb-3 p-2 bg-light rounded border">
+                                <input class="form-check-input" type="checkbox" name="night_available" id="nightSwitch" checked>
+                                <label class="form-check-label small fw-semibold" for="nightSwitch">
+                                    <i class="fa-solid fa-moon text-warning me-1"></i>Available for 24x7 Night Emergencies (1 AM - 5 AM)
+                                </label>
+                            </div>
+                            <div class="small text-muted mb-2">
+                                <i class="fa-solid fa-circle-check text-success me-1"></i>No medical reports needed now! Free health checkup is conducted at the hospital/blood bank counter.
+                            </div>
+                        </div>
+
+                        <!-- Hospital Specific Fields -->
+                        <div id="hospitalFields" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-secondary">Medical Council License Number</label>
+                                <input type="text" name="license_number" class="form-control" placeholder="e.g. HOSP-DL-2024-9912">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-secondary">Emergency Desk In-Charge Person</label>
+                                <input type="text" name="emergency_person" class="form-control" placeholder="e.g. Dr. A. K. Sen (CMO)">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-danger w-100 py-2 fw-bold shadow-sm mt-3">
+                            <i class="fa-solid fa-check-circle me-2"></i>Create Account
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <span class="text-muted small">Already registered?</span> 
+                <a href="{{ url_for('login') }}" class="text-danger fw-bold small ms-1">Sign In</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleRoleFields() {
+    const role = document.getElementById('roleSelect').value;
+    if (role === 'hospital') {
+        document.getElementById('donorFields').style.display = 'none';
+        document.getElementById('hospitalFields').style.display = 'block';
+    } else {
+        document.getElementById('donorFields').style.display = 'block';
+        document.getElementById('hospitalFields').style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

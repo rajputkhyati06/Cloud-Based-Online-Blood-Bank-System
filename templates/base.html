@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cloud Blood Bank & Emergency Triage{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fa-solid fa-heart-pulse text-danger me-2"></i>CloudBlood
+                <span class="brand-badge"><i class="fa-solid fa-cloud me-1"></i>Cloud-Native</span>
+            </a>
+            <button class="navbar-toggler text-white" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('index') }}"><i class="fa-solid fa-magnifying-glass me-1"></i>Live Stock</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50" href="{{ url_for('index') }}#compatibility"><i class="fa-solid fa-code-fork me-1"></i>Compatibility</a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    {% if session.get('user_id') %}
+                        <span class="text-white-50 me-3 small">
+                            {% if session.get('role') == 'hospital' %}
+                                <div class="d-inline-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-1 me-2 border border-white border-opacity-25 shadow-sm">
+                                    <i class="fa-solid fa-hospital text-warning me-2 fs-5"></i>
+                                    <div class="text-start">
+                                        <div class="text-white fw-bold lh-1 small">{{ session.get('hospital_name', session.get('full_name')) }}</div>
+                                        <span class="badge bg-success p-1 font-monospace mt-1" style="font-size: 0.68rem;">
+                                            <i class="fa-solid fa-certificate me-1"></i>Govt. Lic: {{ session.get('license_number') }}
+                                        </span>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <i class="fa-solid fa-user-circle me-1 text-white"></i>{{ session.get('full_name') }} 
+                                <span class="badge bg-danger text-uppercase ms-1">{{ session.get('role') }}</span>
+                            {% endif %}
+                        </span>
+                        {% if session.get('role') == 'donor' %}
+                            <a href="{{ url_for('donor_dashboard') }}" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-gauge me-1"></i>Dashboard</a>
+                        {% elif session.get('role') == 'hospital' %}
+                            <a href="{{ url_for('hospital_dashboard') }}" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-gauge me-1"></i>Hospital Portal</a>
+                        {% elif session.get('role') == 'admin' %}
+                            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-shield-halved me-1"></i>Admin Console</a>
+                        {% endif %}
+                        <a href="{{ url_for('logout') }}" class="btn btn-sm btn-danger"><i class="fa-solid fa-right-from-bracket me-1"></i>Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-sm me-2"><i class="fa-solid fa-right-to-bracket me-1"></i>Sign In</a>
+                        <a href="{{ url_for('register') }}" class="btn btn-danger btn-sm"><i class="fa-solid fa-user-plus me-1"></i>Register</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
+                        <i class="fa-solid fa-circle-info me-2"></i>{{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container text-center">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-md-start">
+                    <p class="mb-0"><strong>Cloud-Based Online Blood Bank & Emergency Triage System</strong></p>
+                    <small class="text-secondary">Powered by DBaaS, STaaS & Event-Driven Cloud Notification Architecture</small>
+                </div>
+                <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                    <span class="badge bg-dark border text-light"><i class="fa-solid fa-shield-heart text-danger me-1"></i>24x7 Emergency Logistics</span>
+                    <span class="badge bg-dark border text-light ms-2"><i class="fa-solid fa-clock-rotate-left me-1"></i>FIFO 35-Day Expiry Engine</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

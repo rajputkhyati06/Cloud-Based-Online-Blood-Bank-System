@@ -1,0 +1,686 @@
+{% extends "base.html" %}
+
+{% block title %}Central Admin Logistics Command | Cloud Blood Bank{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <!-- 1. Executive Admin Header Banner -->
+    <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 16px; background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%); color: white;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-danger rounded-pill px-3 py-1"><i class="fa-solid fa-shield-halved me-1"></i>CENTRAL LOGISTICS COMMAND</span>
+                    <span class="badge bg-success bg-opacity-25 text-light border border-success border-opacity-50 rounded-pill px-3 py-1">
+                        <i class="fa-solid fa-circle-check text-success me-1"></i>State Blood Transfusion Council (SBTC) Certified
+                    </span>
+                </div>
+                <h3 class="fw-bold mb-1">Central Blood Bank Manager & Cloud Inventory Console</h3>
+                <div class="text-secondary small">
+                    Logged in as: <strong class="text-light">{{ session.get('full_name') }}</strong> &nbsp;|&nbsp; 
+                    Facility: <span class="text-light">Central Red Cross Regional Hub</span> &nbsp;|&nbsp; 
+                    Cloud DB Latency: <span class="text-success fw-bold">4.2ms (Healthy)</span>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-light btn-sm fw-bold shadow-sm" onclick="location.reload()">
+                    <i class="fa-solid fa-rotate me-1"></i>Refresh Telemetry
+                </button>
+                <button type="button" class="btn btn-danger fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addStockModal">
+                    <i class="fa-solid fa-circle-plus me-1"></i>Intake New Blood Bag
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Cloud Telemetry Strip (6 KPIs) -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-radius: 14px; border-left: 4px solid #EF4444 !important;">
+                <div class="text-muted small text-uppercase fw-bold mb-1">Cold Units in Reserve</div>
+                <div class="d-flex align-items-center justify-content-between">
+                    <h3 class="fw-bold text-dark mb-0">{{ total_stock_count }}</h3>
+                    <span class="badge bg-danger bg-opacity-10 text-danger p-2"><i class="fa-solid fa-boxes-stacked fa-lg"></i></span>
+                </div>
+                <small class="text-secondary mt-1 d-block">Across all 8 groups</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-radius: 14px; border-left: 4px solid #F59E0B !important;">
+                <div class="text-muted small text-uppercase fw-bold mb-1">FIFO Priority Bags</div>
+                <div class="d-flex align-items-center justify-content-between">
+                    <h3 class="fw-bold {% if expiring_soon_count > 0 %}text-warning{% else %}text-dark{% endif %} mb-0">{{ expiring_soon_count }}</h3>
+                    <span class="badge bg-warning bg-opacity-10 text-warning p-2"><i class="fa-solid fa-clock-rotate-left fa-lg"></i></span>
+                </div>
+                <small class="text-warning fw-semibold mt-1 d-block">&lt; 7 Days Expiry Alert</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-radius: 14px; border-left: 4px solid #10B981 !important;">
+                <div class="text-muted small text-uppercase fw-bold mb-1">Dispatched Units</div>
+                <div class="d-flex align-items-center justify-content-between">
+                    <h3 class="fw-bold text-success mb-0">{{ total_dispatched_count }}</h3>
+                    <span class="badge bg-success bg-opacity-10 text-success p-2"><i class="fa-solid fa-truck-medical fa-lg"></i></span>
+                </div>
+                <small class="text-success fw-semibold mt-1 d-block">100% Verified Release</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-radius: 14px; border-left: 4px solid #3B82F6 !important;">
+                <div class="text-muted small text-uppercase fw-bold mb-1">Hospital Network</div>
+                <div class="d-flex align-items-center justify-content-between">
+                    <h3 class="fw-bold text-primary mb-0">{{ total_hospitals_count }}</h3>
+                    <span class="badge bg-primary bg-opacity-10 text-primary p-2"><i class="fa-solid fa-hospital fa-lg"></i></span>
+                </div>
+                <small class="text-secondary mt-1 d-block">NABH Accredited</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-radius: 14px; border-left: 4px solid #8B5CF6 !important;">
+                <div class="text-muted small text-uppercase fw-bold mb-1">Registered Donors</div>
+                <div class="d-flex align-items-center justify-content-between">
+                    <h3 class="fw-bold text-dark mb-0">{{ total_donors_count }}</h3>
+                    <span class="badge bg-purple bg-opacity-10 text-purple p-2" style="background:#EDE9FE; color:#8B5CF6;"><i class="fa-solid fa-users fa-lg"></i></span>
+                </div>
+                <small class="text-secondary mt-1 d-block">24x7 Night Ready</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm p-3 h-100 bg-white" style="border-radius: 14px; border-left: 4px solid #06B6D4 !important;">
+                <div class="text-muted small text-uppercase fw-bold mb-1">Cold Chain Temp</div>
+                <div class="d-flex align-items-center justify-content-between">
+                    <h3 class="fw-bold text-info mb-0">{{ avg_temp }}°C</h3>
+                    <span class="badge bg-info bg-opacity-10 text-info p-2"><i class="fa-solid fa-snowflake fa-lg"></i></span>
+                </div>
+                <small class="text-success fw-semibold mt-1 d-block"><i class="fa-solid fa-circle text-success me-1" style="font-size:8px;"></i>WHO Compliant (2-6°C)</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Live 8 Blood Groups Stock Meters -->
+    <div class="row g-2 mb-4">
+        {% set stock_dict = {} %}
+        {% for s in stock_summary %}
+            {% set _ = stock_dict.update({s.blood_group: s.total_units}) %}
+        {% endfor %}
+
+        {% for bg in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] %}
+            {% set count = stock_dict.get(bg, 0) %}
+            <div class="col-6 col-sm-3 col-lg-3 col-xl">
+                <div class="card border-0 shadow-sm p-2 text-center {% if count == 0 %}bg-danger bg-opacity-10 border border-danger border-2{% else %}bg-white{% endif %}" style="border-radius: 12px;">
+                    <div class="d-flex justify-content-between align-items-center px-2">
+                        <span class="badge bg-danger fs-6">{{ bg }}</span>
+                        <span class="h4 fw-bold mb-0 {% if count == 0 %}text-danger{% else %}text-dark{% endif %}">{{ count }}</span>
+                    </div>
+                    <small class="d-block mt-1">
+                        {% if count == 0 %}
+                            <span class="badge bg-danger text-white"><i class="fa-solid fa-triangle-exclamation me-1"></i>DEPLETED</span>
+                        {% elif count <= 2 %}
+                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-triangle-exclamation me-1"></i>LOW ({{ count }})</span>
+                        {% else %}
+                            <span class="badge bg-success bg-opacity-10 text-success"><i class="fa-solid fa-check me-1"></i>HEALTHY</span>
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- 4. Tabbed Operational Command Sections -->
+    <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+            <ul class="nav nav-pills card-header-pills gap-2" id="adminCommandTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-bold position-relative" id="tab-triage" data-bs-toggle="tab" data-bs-target="#content-triage" type="button" role="tab">
+                        <i class="fa-solid fa-bell text-danger me-2"></i>Hospital Triage & Requisitions
+                        {% if pending_requests|length > 0 %}
+                            <span class="badge bg-danger rounded-pill ms-1">{{ pending_requests|length }}</span>
+                        {% endif %}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="tab-inventory" data-bs-toggle="tab" data-bs-target="#content-inventory" type="button" role="tab">
+                        <i class="fa-solid fa-barcode text-primary me-2"></i>Cold Storage & FIFO Expiry
+                        <span class="badge bg-secondary rounded-pill ms-1">{{ inventory_bags|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="tab-dispatches" data-bs-toggle="tab" data-bs-target="#content-dispatches" type="button" role="tab">
+                        <i class="fa-solid fa-truck-fast text-success me-2"></i>Dispatch Log & Gate-Passes
+                        <span class="badge bg-secondary rounded-pill ms-1">{{ approved_dispatches|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="tab-hospitals" data-bs-toggle="tab" data-bs-target="#content-hospitals" type="button" role="tab">
+                        <i class="fa-solid fa-hospital-user text-info me-2"></i>Hospital Directory & Trust
+                        <span class="badge bg-secondary rounded-pill ms-1">{{ hospitals_list|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="tab-audit" data-bs-toggle="tab" data-bs-target="#content-audit" type="button" role="tab">
+                        <i class="fa-solid fa-shield-halved text-dark me-2"></i>Security Audit Trail
+                        <span class="badge bg-dark rounded-pill ms-1">{{ audit_logs|length }}</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="tab-content" id="adminCommandTabsContent">
+
+                <!-- ========================================== -->
+                <!-- TAB 1: HOSPITAL TRIAGE & REQUISITIONS      -->
+                <!-- ========================================== -->
+                <div class="tab-pane fade show active" id="content-triage" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-lg-8">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-0">Pending Hospital Requisitions & Doctor Verification</h5>
+                                    <small class="text-muted">Review clinical emergency requisitions, doctor credentials, and dispatch units via FIFO.</small>
+                                </div>
+                                <span class="badge bg-danger rounded-pill px-3 py-2">{{ pending_requests|length }} REQUISITIONS PENDING</span>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle border">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Req #</th>
+                                            <th>Hospital</th>
+                                            <th>Patient & IPD</th>
+                                            <th>Group & Units</th>
+                                            <th>Doctor ID & Slip</th>
+                                            <th>Urgency</th>
+                                            <th>Decision Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for req in pending_requests %}
+                                        <tr class="{% if req.urgency_level == 'emergency' %}table-danger{% endif %}">
+                                            <td class="fw-bold">#{{ req.request_id }}</td>
+                                            <td>
+                                                <strong class="text-dark">{{ req.hospital_name }}</strong>
+                                                <div class="small text-muted"><i class="fa-solid fa-phone me-1"></i>{{ req.emergency_desk_contact }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-semibold">{{ req.patient_name }}</div>
+                                                <small class="badge bg-light text-dark border">{{ req.patient_ipd_number }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-danger fs-6">{{ req.blood_group }}</span>
+                                                <div class="small fw-bold mt-1 text-muted">{{ req.units_requested }} Unit(s)</div>
+                                            </td>
+                                            <td>
+                                                <div class="small"><strong>{{ req.doctor_name }}</strong></div>
+                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ req.doctor_mci_id }}</span>
+                                                {% if req.doctor_slip_url %}
+                                                    <div class="mt-1">
+                                                        <span class="badge bg-success bg-opacity-10 text-success"><i class="fa-solid fa-file-circle-check me-1"></i>Prescription Verified</span>
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if req.urgency_level == 'emergency' %}
+                                                    <span class="badge bg-danger animate-pulse"><i class="fa-solid fa-bolt me-1"></i>EMERGENCY SOS</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">STANDARD RESTOCK</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <form action="{{ url_for('approve_request', request_id=req.request_id) }}" method="POST" class="d-inline">
+                                                        <button type="submit" class="btn btn-sm btn-success fw-bold">
+                                                            <i class="fa-solid fa-check me-1"></i>Approve (FIFO)
+                                                        </button>
+                                                    </form>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="openRejectModal({{ req.request_id }}, '{{ req.hospital_name }}')">
+                                                        <i class="fa-solid fa-xmark"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="7" class="text-center py-5 text-muted">
+                                                <div class="mb-2"><i class="fa-solid fa-circle-check text-success fa-3x"></i></div>
+                                                <h6 class="fw-bold text-dark">All Clear! No Pending Hospital Requisitions</h6>
+                                                <small>All hospital emergency and standard requests have been fulfilled or dispatched.</small>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- PowerBI Analytics Visual Breakdown -->
+                        <div class="col-lg-4">
+                            <div class="card border-0 shadow-sm p-4 bg-light h-100" style="border-radius: 14px;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-chart-pie text-danger me-2"></i>Live Cold Reserves</h6>
+                                    <span class="badge bg-danger rounded-pill">PowerBI Analytics</span>
+                                </div>
+                                <p class="text-muted small mb-3">Real-time inventory proportion across all 8 blood groups:</p>
+                                
+                                <div style="height: 230px; position: relative;">
+                                    <canvas id="stockChart"></canvas>
+                                </div>
+
+                                <div class="mt-3 p-3 bg-white rounded-3 border small">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted">Total Available Units:</span>
+                                        <strong class="text-dark">{{ total_stock_count }} Units</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted">FIFO Expedited (&lt; 7 Days):</span>
+                                        <strong class="text-danger">{{ expiring_soon_count }} Bags</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted">Cold Chain Average:</span>
+                                        <strong class="text-info">{{ avg_temp }}°C (Compliant)</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- TAB 2: COLD STORAGE & FIFO EXPIRY TRACKER -->
+                <!-- ========================================== -->
+                <div class="tab-pane fade" id="content-inventory" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-snowflake text-info me-2"></i>Active Cold Storage Blood Units (FIFO Expiry Sequence)</h5>
+                            <small class="text-muted">Strictly sorted by <strong>Expiry Date (ASC)</strong>: Units closest to the 35-day red-blood-cell limit are prioritized first to completely eliminate wastage.</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="inventorySearch" class="form-control form-control-sm" placeholder="🔍 Search bag, group, batch..." onkeyup="filterInventoryTable()">
+                            <span class="badge bg-secondary d-flex align-items-center px-3">35-DAY RULE ENFORCED</span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle border" id="inventoryTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Bag ID</th>
+                                    <th>Batch Code</th>
+                                    <th>Blood Group</th>
+                                    <th>Blood Bank Facility</th>
+                                    <th>Collection Date</th>
+                                    <th>Expiry Date (35 Days)</th>
+                                    <th>Storage Temp</th>
+                                    <th>FIFO Priority Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bag in inventory_bags %}
+                                <tr>
+                                    <td class="fw-bold">#BAG-{{ bag.bag_id }}</td>
+                                    <td><code class="text-danger fw-bold">{{ bag.batch_number }}</code></td>
+                                    <td><span class="badge bg-danger fs-6">{{ bag.blood_group }}</span></td>
+                                    <td>{{ bag.blood_bank_name }}</td>
+                                    <td>{{ bag.collection_date }}</td>
+                                    <td><strong>{{ bag.expiry_date }}</strong></td>
+                                    <td><span class="badge bg-light text-dark border">{{ bag.storage_temp_celsius }}°C</span></td>
+                                    <td>
+                                        {% if bag.days_left <= 5 %}
+                                            <span class="badge bg-warning text-dark px-2 py-1"><i class="fa-solid fa-triangle-exclamation me-1"></i>PRIORITY 1 ({{ bag.days_left }} Days Left)</span>
+                                        {% elif bag.days_left <= 15 %}
+                                            <span class="badge bg-info text-dark px-2 py-1"><i class="fa-solid fa-clock me-1"></i>PRIORITY 2 ({{ bag.days_left }} Days Left)</span>
+                                        {% else %}
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="fa-solid fa-check me-1"></i>FRESH ({{ bag.days_left }} Days Left)</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4 text-muted">No active blood units in cold storage. Click "Intake New Blood Bag" to record units.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- TAB 3: DISPATCH LOG & DIGITAL GATE-PASSES  -->
+                <!-- ========================================== -->
+                <div class="tab-pane fade" id="content-dispatches" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-file-invoice text-success me-2"></i>Official Dispatch Records & Digital Gate-Passes</h5>
+                            <small class="text-muted">Digital release gate-passes generated via automated FIFO allocation for hospital ambulance collection.</small>
+                        </div>
+                        <span class="badge bg-success rounded-pill px-3 py-2">{{ approved_dispatches|length }} UNITS DISPATCHED</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle border">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Req #</th>
+                                    <th>Hospital Name</th>
+                                    <th>Patient & Bed</th>
+                                    <th>Blood Group</th>
+                                    <th>Gate-Pass Token</th>
+                                    <th>Dispatch Timestamp</th>
+                                    <th>Official Release Slip</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in approved_dispatches %}
+                                <tr>
+                                    <td class="fw-bold">#{{ item.request_id }}</td>
+                                    <td><strong>{{ item.hospital_name }}</strong></td>
+                                    <td>
+                                        <div>{{ item.patient_name }}</div>
+                                        <small class="text-muted">{{ item.patient_ipd_number }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger fs-6">{{ item.blood_group }}</span>
+                                        <small class="text-muted ms-1">({{ item.units_requested }} Unit)</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-dark font-monospace px-3 py-2">
+                                            <i class="fa-solid fa-qrcode me-1 text-warning"></i>{{ item.token_code or 'PASS-CONFIRMED' }}
+                                        </span>
+                                    </td>
+                                    <td class="small text-muted">{{ item.issued_timestamp or item.created_at }}</td>
+                                    <td>
+                                        <a href="{{ url_for('download_gatepass', request_id=item.request_id) }}" class="btn btn-sm btn-outline-danger fw-bold" target="_blank">
+                                            <i class="fa-solid fa-file-pdf me-1"></i>Download Gate-Pass PDF
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">No dispatched units recorded yet. When a hospital requisition is approved, official gate-passes appear here.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- TAB 4: ACCREDITED HOSPITAL DIRECTORY       -->
+                <!-- ========================================== -->
+                <div class="tab-pane fade" id="content-hospitals" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-hospital text-info me-2"></i>Accredited Healthcare Facilities Directory</h5>
+                            <small class="text-muted">Registered hospital trauma centers authorized to dispatch regional blood requisitions under State Health Directorate.</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill px-3 py-2">{{ hospitals_list|length }} ACCREDITED HOSPITALS</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle border">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Hospital Name</th>
+                                    <th>Medical Council License</th>
+                                    <th>Regional Hub City</th>
+                                    <th>Emergency Desk In-Charge</th>
+                                    <th>Helpline / Contact</th>
+                                    <th>NABH Trust Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for h in hospitals_list %}
+                                <tr>
+                                    <td>
+                                        <strong class="text-dark">{{ h.hospital_name }}</strong>
+                                        {% if h.google_maps_url %}
+                                            <a href="{{ h.google_maps_url }}" target="_blank" class="small text-danger d-block text-decoration-none">
+                                                <i class="fa-solid fa-location-dot me-1"></i>View ER Route
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border font-monospace">{{ h.license_number }}</span>
+                                    </td>
+                                    <td><span class="badge bg-secondary">{{ h.city }}</span></td>
+                                    <td>{{ h.emergency_desk_person }}</td>
+                                    <td><a href="tel:{{ h.emergency_desk_contact }}" class="text-decoration-none fw-semibold text-dark">{{ h.emergency_desk_contact }}</a></td>
+                                    <td>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                                            <i class="fa-solid fa-shield-check me-1"></i>{{ h.trust_score }}% Trust Score
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- TAB 5: FORENSIC CLOUD SECURITY AUDIT TRAIL -->
+                <!-- ========================================== -->
+                <div class="tab-pane fade" id="content-audit" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-fingerprint text-danger me-2"></i>Cloud Forensic Audit Trail & Non-Repudiation Log</h5>
+                            <small class="text-muted">Immutable cryptographic record of all administrative actions, triage requests, doctor approvals, and fraud flags.</small>
+                        </div>
+                        <span class="badge bg-dark rounded-pill px-3 py-2"><i class="fa-solid fa-lock me-1"></i>AUDIT TRAIL SECURED</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm align-middle border font-monospace small">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Log ID</th>
+                                    <th>Timestamp</th>
+                                    <th>Action Type</th>
+                                    <th>Performed By</th>
+                                    <th>Forensic Event Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in audit_logs %}
+                                <tr>
+                                    <td class="fw-bold text-muted">#LOG-{{ log.log_id }}</td>
+                                    <td class="text-nowrap">{{ log.timestamp }}</td>
+                                    <td>
+                                        {% if 'APPROVED' in log.action or 'DONATION_VERIFIED' in log.action %}
+                                            <span class="badge bg-success">{{ log.action }}</span>
+                                        {% elif 'REJECTED' in log.action or 'CANCEL' in log.action %}
+                                            <span class="badge bg-danger">{{ log.action }}</span>
+                                        {% elif 'EMERGENCY' in log.action %}
+                                            <span class="badge bg-warning text-dark">{{ log.action }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ log.action }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="fw-bold">{{ log.performed_by }}</td>
+                                    <td class="text-secondary">{{ log.details }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">No audit events recorded yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL: INTAKE NEW BLOOD BAG (WITH 1-CLICK SAMPLE HELPER) -->
+<!-- ======================================================== -->
+<div class="modal fade" id="addStockModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius: 16px;">
+            <div class="modal-header bg-danger text-white">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-circle-plus fa-lg"></i>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0">Intake New Blood Unit</h5>
+                        <small class="text-white-50">Record newly tested donation bag into cold storage</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('add_stock') }}" method="POST">
+                <div class="modal-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small text-muted">Demonstration shortcut:</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger fw-bold" onclick="fillDemoBloodIntake()">
+                            <i class="fa-solid fa-bolt me-1"></i>1-Click Auto-Fill Sample Intake
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Blood Bank Facility Branch</label>
+                        <input type="text" name="blood_bank_name" id="intakeFacility" class="form-control" value="Central Red Cross Blood Bank Delhi" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Blood Group</label>
+                            <select name="blood_group" id="intakeBloodGroup" class="form-select" required>
+                                {% for bg in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] %}
+                                    <option value="{{ bg }}" {% if bg == 'O-' %}selected{% endif %}>Blood Group {{ bg }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Storage Temp (°C)</label>
+                            <input type="number" step="0.1" name="temp" id="intakeTemp" class="form-control" value="3.9" required>
+                            <small class="text-muted">WHO standard: 2.0°C to 6.0°C</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Batch Barcode Number</label>
+                        <input type="text" name="batch_number" id="intakeBatch" class="form-control font-monospace" placeholder="e.g. BATCH-2026-DL-882" required>
+                    </div>
+                    <div class="p-2 bg-light rounded border small text-muted">
+                        <i class="fa-solid fa-circle-info text-primary me-1"></i>The system automatically calculates <strong>Collection Date (Today)</strong> and <strong>Expiry Date (+35 Days)</strong> according to National Blood Transfusion Council regulations.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger fw-bold">
+                        <i class="fa-solid fa-save me-1"></i>Record Bag in Cold Storage
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL: REJECT REQUISITION WITH DISCREPANCY REASON       -->
+<!-- ======================================================== -->
+<div class="modal fade" id="rejectRequestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius: 16px;">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Reject Hospital Requisition</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="rejectForm" method="POST">
+                <div class="modal-body p-4">
+                    <p class="text-muted small">Specify the regulatory discrepancy reason for declining requisition <strong id="rejectReqLabel" class="text-danger"></strong>. This will be recorded in the official Forensic Audit Trail.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Select Discrepancy Reason</label>
+                        <select name="rejection_reason" id="rejectReasonSelect" class="form-select" required>
+                            <option value="Doctor MCI / NMC Registration ID could not be validated">Doctor MCI / NMC Registration ID could not be validated</option>
+                            <option value="Prescription paper missing, illegible, or unverified">Prescription paper missing, illegible, or unverified</option>
+                            <option value="Discrepancy in requested units vs clinical emergency triage guidelines">Discrepancy in requested units vs clinical emergency triage guidelines</option>
+                            <option value="Duplicate requisition detected from hospital emergency desk">Duplicate requisition detected from hospital emergency desk</option>
+                            <option value="Patient IPD bed discharged or transferred">Patient IPD bed discharged or transferred</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger fw-bold">
+                        <i class="fa-solid fa-ban me-1"></i>Confirm Rejection & Log
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 1. Live Doughnut Chart for Central Blood Reserves
+document.addEventListener("DOMContentLoaded", function() {
+    const ctx = document.getElementById('stockChart').getContext('2d');
+    const labels = {{ chart_labels | tojson }};
+    const data = {{ chart_values | tojson }};
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: [
+                    '#EF4444', '#F87171', '#3B82F6', '#60A5FA', 
+                    '#10B981', '#34D399', '#F59E0B', '#6B7280'
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 10,
+                        padding: 8,
+                        font: { size: 10 }
+                    }
+                }
+            }
+        }
+    });
+});
+
+// 2. Quick 1-Click Demo Blood Intake Helper
+function fillDemoBloodIntake() {
+    const randomBatch = "BATCH-2026-DL-" + Math.floor(1000 + Math.random() * 9000);
+    document.getElementById('intakeFacility').value = "Central Red Cross Blood Bank Delhi";
+    document.getElementById('intakeBloodGroup').value = "O-";
+    document.getElementById('intakeBatch').value = randomBatch;
+    document.getElementById('intakeTemp').value = "3.8";
+}
+
+// 3. Rejection Modal Controller
+function openRejectModal(requestId, hospitalName) {
+    document.getElementById('rejectReqLabel').innerText = `#${requestId} (${hospitalName})`;
+    document.getElementById('rejectForm').action = `/admin/reject/${requestId}`;
+    const modal = new bootstrap.Modal(document.getElementById('rejectRequestModal'));
+    modal.show();
+}
+
+// 4. Live Table Filter for Cold Storage Bags
+function filterInventoryTable() {
+    const input = document.getElementById('inventorySearch').value.toLowerCase();
+    const rows = document.querySelectorAll('#inventoryTable tbody tr');
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(input) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

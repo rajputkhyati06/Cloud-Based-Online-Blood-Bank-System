@@ -1,0 +1,554 @@
+{% extends "base.html" %}
+
+{% block title %}Hospital Triage & Blood Bank Portal | Cloud Blood Bank{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <!-- ============================================================== -->
+    <!-- 1. TOP HOSPITAL COMMAND DESK & OFFICIAL FACILITY IDENTITY      -->
+    <!-- ============================================================== -->
+    <div class="card border-0 shadow-lg p-4 mb-4" style="border-radius: 18px; background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: white;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center">
+                <div class="bg-danger text-white rounded-3 p-3 me-3 shadow-lg d-flex align-items-center justify-content-center" style="width: 82px; height: 82px;">
+                    <i class="fa-solid fa-hospital-symbol fa-3x"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                        <span class="badge bg-danger text-uppercase px-2 py-1"><i class="fa-solid fa-shield-halved me-1"></i>CENTRAL MEDICAL PORTAL</span>
+                        <span class="badge bg-success px-2 py-1 shadow-sm"><i class="fa-solid fa-certificate me-1"></i>Govt. License Verified: {{ hospital.license_number }}</span>
+                        {% if hospital.city %}
+                        <span class="badge bg-light text-dark px-2 py-1 shadow-sm"><i class="fa-solid fa-location-dot text-danger me-1"></i>{{ hospital.city }} Regional Hub</span>
+                        {% endif %}
+                    </div>
+                    <!-- HUGE COMMANDING HOSPITAL NAME AT VERY TOP -->
+                    <h1 class="display-5 fw-bold mb-1 text-white">
+                        <i class="fa-solid fa-hospital text-danger me-2"></i>{{ hospital.hospital_name }}
+                    </h1>
+                    <div class="text-white-50 small d-flex flex-wrap align-items-center gap-3 mt-1">
+                        <span><i class="fa-solid fa-user-doctor text-warning me-1"></i><strong>Emergency In-Charge:</strong> {{ hospital.emergency_desk_person }}</span>
+                        <span><i class="fa-solid fa-phone text-success me-1"></i><strong>ER Direct Helpline:</strong> {{ hospital.emergency_desk_contact }}</span>
+                        <span><span class="badge bg-primary"><i class="fa-solid fa-shield-heart me-1"></i>Hospital Trust Score: {{ hospital.trust_score }}%</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dual Action Buttons: Emergency Patient SOS vs Blood Bank Storage Restock -->
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-danger fw-bold shadow px-3 py-2" data-bs-toggle="modal" data-bs-target="#emergencyModal">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i>1. Raise Emergency Patient SOS
+                </button>
+                <button type="button" class="btn btn-outline-light fw-bold shadow px-3 py-2" data-bs-toggle="modal" data-bs-target="#restockModal">
+                    <i class="fa-solid fa-boxes-packing me-1"></i>2. Restock Hospital Blood Bank
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- 2. FOUR ENTERPRISE SUMMARY METRIC CARDS                        -->
+    <!-- ============================================================== -->
+    <div class="row g-3 mb-4">
+        <!-- Metric 1: Total Requisitions Raised -->
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3 h-100" style="border-radius: 14px; border-left: 4px solid #3B82F6 !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small fw-semibold">Total Slips Raised</span>
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                </div>
+                <div class="display-6 fw-bold text-dark mt-2">{{ stats.total }}</div>
+                <small class="text-muted mt-1"><i class="fa-solid fa-database me-1"></i>All Emergency & Restock Slips</small>
+            </div>
+        </div>
+
+        <!-- Metric 2: Under Review -->
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3 h-100" style="border-radius: 14px; border-left: 4px solid #F59E0B !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small fw-semibold">Under Central Review</span>
+                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                </div>
+                <div class="display-6 fw-bold text-warning mt-2">{{ stats.pending }}</div>
+                <small class="text-muted mt-1"><i class="fa-solid fa-clock me-1"></i>Awaiting Dispatch / Donors</small>
+            </div>
+        </div>
+
+        <!-- Metric 3: Donors In-Transit -->
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3 h-100 {% if stats.in_transit > 0 %}border-success border-2 bg-success bg-opacity-10{% endif %}" style="border-radius: 14px; border-left: 4px solid #10B981 !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small fw-semibold">Active Donors Handshake</span>
+                    <div class="bg-success bg-opacity-20 text-success rounded-circle p-2">
+                        <i class="fa-solid fa-person-running"></i>
+                    </div>
+                </div>
+                <div class="display-6 fw-bold text-success mt-2">
+                    {{ stats.in_transit }}
+                    {% if stats.in_transit > 0 %}
+                    <span class="badge bg-success fs-6 align-middle ms-1 animate-pulse">LIVE</span>
+                    {% endif %}
+                </div>
+                <small class="text-muted mt-1"><i class="fa-solid fa-route me-1"></i>Volunteered / En Route to ER</small>
+            </div>
+        </div>
+
+        <!-- Metric 4: Fulfilled / Dispatched -->
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3 h-100" style="border-radius: 14px; border-left: 4px solid #06B6D4 !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small fw-semibold">Fulfilled / Dispatched</span>
+                    <div class="bg-info bg-opacity-10 text-info rounded-circle p-2">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+                <div class="display-6 fw-bold text-dark mt-2">{{ stats.fulfilled }}</div>
+                <small class="text-muted mt-1"><i class="fa-solid fa-truck-medical me-1"></i>Gate-Passes & Donated Bags</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- 3. DEDICATED INCOMING DONOR RESPONSES & HANDSHAKE INBOX        -->
+    <!-- (Direct answer to: "donar request bhejege to kaha show hoga")   -->
+    <!-- ============================================================== -->
+    <div class="card border-0 shadow-sm p-4 mb-4 border-2 border-warning" style="border-radius: 16px; background: #FFFDF8;">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div class="d-flex align-items-center">
+                <div class="p-2 bg-warning bg-opacity-25 text-warning rounded-circle me-3">
+                    <i class="fa-solid fa-inbox fa-lg"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-satellite-dish text-danger me-1"></i>Live Incoming Donor Responses & Emergency Handshake Inbox
+                    </h5>
+                    <small class="text-muted">Direct notifications when hero donors in your region click <strong>"I Am Coming!"</strong></small>
+                </div>
+            </div>
+            <span class="badge bg-warning text-dark px-3 py-2 fw-bold">
+                {{ incoming_donors|length }} Active Volunteer(s)
+            </span>
+        </div>
+
+        {% if incoming_donors %}
+            <div class="row g-3">
+                {% for item in incoming_donors %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-2 {% if item.donor_status == 'donor_applied' %}border-warning bg-warning bg-opacity-10{% else %}border-success bg-success bg-opacity-10{% endif %} p-3 shadow-sm h-100" style="border-radius: 14px;">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge {% if item.donor_status == 'donor_applied' %}bg-warning text-dark{% else %}bg-success text-white{% endif %} text-uppercase">
+                                {% if item.donor_status == 'donor_applied' %}
+                                    <i class="fa-solid fa-bell me-1"></i>Awaiting Doctor Approval
+                                {% else %}
+                                    <i class="fa-solid fa-person-running me-1"></i>Accepted • En Route to ER!
+                                {% endif %}
+                            </span>
+                            <span class="badge bg-danger fs-6">{{ item.donor_bg or item.blood_group }}</span>
+                        </div>
+
+                        <h5 class="fw-bold text-dark mb-1">{{ item.donor_name }}</h5>
+                        <div class="small text-muted mb-3">
+                            <div><i class="fa-solid fa-phone text-success me-1"></i><strong>Phone:</strong> {{ item.donor_phone }}</div>
+                            <div><i class="fa-solid fa-award text-primary me-1"></i><strong>Verified Donations:</strong> {{ item.donor_donations or 0 }} times</div>
+                            <div><i class="fa-solid fa-bed-pulse text-danger me-1"></i><strong>For Patient:</strong> {{ item.patient_name }} ({{ item.patient_ipd_number }})</div>
+                        </div>
+
+                        <div class="mt-auto pt-2 border-top border-secondary border-opacity-25 d-flex gap-2 flex-wrap">
+                            {% if item.donor_status == 'donor_applied' %}
+                                <!-- Doctor Decision: ACCEPT OR REJECT -->
+                                <form action="{{ url_for('hospital_accept_donor', request_id=item.request_id) }}" method="POST" class="flex-grow-1">
+                                    <button type="submit" class="btn btn-sm btn-success w-100 fw-bold shadow-sm">
+                                        <i class="fa-solid fa-check me-1"></i>Accept Donor
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('hospital_reject_donor', request_id=item.request_id) }}" method="POST" class="flex-grow-1" onsubmit="return confirm('Decline this donor? The emergency requisition will be reopened so another volunteer can respond.')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100 fw-bold shadow-sm">
+                                        <i class="fa-solid fa-xmark me-1"></i>Decline / Reject
+                                    </button>
+                                </form>
+                            {% elif item.donor_status == 'doctor_accepted' %}
+                                <!-- Donor arrived at hospital -> MARK DONATED (DONE) -->
+                                <form action="{{ url_for('hospital_mark_donated', request_id=item.request_id) }}" method="POST" class="w-100" onsubmit="return confirm('Confirm that blood has been safely drawn? Life-Saver Certificate will be issued and 90-day cooldown initiated.')">
+                                    <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm">
+                                        <i class="fa-solid fa-check-double me-1"></i>Mark Donated (Verify & Issue Cert)
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-4 bg-white rounded-3 border">
+                <i class="fa-solid fa-tower-broadcast fa-2x text-muted mb-2"></i>
+                <h6 class="text-dark fw-bold mb-1">No Active Donor Responses In Queue Right Now</h6>
+                <small class="text-muted">
+                    When a volunteer clicks <strong>"I Am Coming!"</strong> on their emergency radar, their profile card, phone number, and <strong>Accept / Reject buttons</strong> will instantly appear right here.
+                </small>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- 4. INTERNAL HOSPITAL BLOOD BANK COLD STORAGE METER             -->
+    <!-- ============================================================== -->
+    <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 16px;">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fa-solid fa-snowflake text-primary me-2"></i>Internal Hospital Blood Bank Cold Storage Inventory
+                </h5>
+                <small class="text-muted">Live reserve of blood bags currently preserved inside {{ hospital.hospital_name }}</small>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger fw-bold" data-bs-toggle="modal" data-bs-target="#restockModal">
+                <i class="fa-solid fa-plus-circle me-1"></i>Open Storage Restock Drive
+            </button>
+        </div>
+
+        <div class="row g-3">
+            {% for bg in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] %}
+                {% set units = hosp_stock.get(bg, 0) %}
+                <div class="col-6 col-md-3 col-xl-custom">
+                    <div class="card border-0 shadow-sm p-3 {% if units == 0 %}bg-danger bg-opacity-10 border-danger border-2{% endif %}" style="border-radius: 14px;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-danger fs-6">{{ bg }}</span>
+                            <span class="fs-3 fw-bold {% if units == 0 %}text-danger{% else %}text-dark{% endif %}">{{ units }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <small class="text-muted">
+                                {% if units == 0 %}
+                                    <strong class="text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>EMPTY</strong>
+                                {% elif units <= 2 %}
+                                    <span class="text-warning fw-bold"><i class="fa-solid fa-circle-exclamation me-1"></i>LOW</span>
+                                {% else %}
+                                    <span class="text-success fw-bold"><i class="fa-solid fa-check me-1"></i>HEALTHY</span>
+                                {% endif %}
+                            </small>
+                            {% if units == 0 %}
+                            <button type="button" class="btn btn-link btn-sm text-danger p-0 fw-bold text-decoration-none" data-bs-toggle="modal" data-bs-target="#restockModal">
+                                Restock &raquo;
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- 5. REQUISITIONS TRACKING & ACTIONS (WITH CANCEL/DELETE OPTION) -->
+    <!-- ============================================================== -->
+    <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 16px;">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fa-solid fa-clipboard-list text-danger me-2"></i>Requisition Tracking, Handshake & Management
+                </h5>
+                <small class="text-muted">Live synchronization with Regional Donors & Central Blood Bank Command</small>
+            </div>
+            <span class="badge bg-light text-dark border px-3 py-2">
+                <i class="fa-solid fa-circle-nodes text-success me-1"></i>Real-Time Handshake Active
+            </span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Req # & Type</th>
+                        <th>Patient / Drive Details</th>
+                        <th>Group & Units</th>
+                        <th>Attending Doctor / Slip</th>
+                        <th>Central Status</th>
+                        <th>Live Donor Response</th>
+                        <th>Action / Decision</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <!-- Column 1: Req # & Type -->
+                        <td>
+                            <strong class="text-dark">#REQ-{{ req.request_id }}</strong>
+                            <div>
+                                {% if req.urgency_level == 'emergency' %}
+                                    <span class="badge badge-emergency"><i class="fa-solid fa-triangle-exclamation me-1"></i>EMERGENCY SOS</span>
+                                {% else %}
+                                    <span class="badge bg-primary"><i class="fa-solid fa-boxes-packing me-1"></i>STORAGE RESTOCK</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Column 2: Details -->
+                        <td>
+                            <strong>{{ req.patient_name }}</strong>
+                            <div class="small text-muted">{{ req.patient_ipd_number }}</div>
+                            <small class="text-secondary">{{ req.created_at }}</small>
+                        </td>
+
+                        <!-- Column 3: Group & Units -->
+                        <td>
+                            <span class="badge bg-danger fs-6">{{ req.blood_group }}</span>
+                            <div class="fw-bold mt-1">{{ req.units_requested }} Unit(s)</div>
+                        </td>
+
+                        <!-- Column 4: Attending Doctor & Prescription Slip -->
+                        <td>
+                            <div class="fw-semibold text-dark">{{ req.doctor_name }}</div>
+                            <small class="text-muted font-monospace">{{ req.doctor_mci_id }}</small>
+                            {% if req.doctor_slip_url %}
+                            <div class="mt-1">
+                                <a href="{{ url_for('static', filename='../uploads/' + req.doctor_slip_url) }}" target="_blank" class="badge bg-light text-primary border text-decoration-none">
+                                    <i class="fa-solid fa-paperclip me-1"></i>View Doctor Paper
+                                </a>
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Column 5: Central Status -->
+                        <td>
+                            {% if req.status == 'approved' or req.status == 'dispatched' %}
+                                <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i>APPROVED</span>
+                            {% elif req.status == 'rejected' %}
+                                <span class="badge bg-danger">REJECTED</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark"><i class="fa-solid fa-hourglass-half me-1"></i>UNDER REVIEW</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Column 6: Live Donor Response -->
+                        <td>
+                            {% if req.donor_status == 'donor_applied' %}
+                                <div class="p-2 rounded bg-warning bg-opacity-10 border border-warning">
+                                    <span class="badge bg-warning text-dark mb-1"><i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteer Responded!</span>
+                                    <div class="small fw-bold text-dark">{{ req.donor_name }} ({{ req.donor_bg }})</div>
+                                    <div class="small text-muted"><i class="fa-solid fa-phone me-1"></i>{{ req.donor_phone }}</div>
+                                </div>
+                            {% elif req.donor_status == 'doctor_accepted' %}
+                                <div class="p-2 rounded bg-success bg-opacity-10 border border-success">
+                                    <span class="badge bg-success mb-1"><i class="fa-solid fa-person-running me-1"></i>Donor Confirmed En Route!</span>
+                                    <div class="small fw-bold text-dark">{{ req.donor_name }} ({{ req.donor_bg }})</div>
+                                    <div class="small text-muted"><i class="fa-solid fa-phone me-1"></i>{{ req.donor_phone }}</div>
+                                </div>
+                            {% elif req.donor_status == 'donated' %}
+                                <div class="text-success fw-bold small">
+                                    <i class="fa-solid fa-circle-check me-1"></i>Blood Received & Certificate Issued
+                                </div>
+                                <div class="small text-muted">Donor: {{ req.donor_name }}</div>
+                            {% else %}
+                                <span class="text-muted small"><i class="fa-solid fa-tower-broadcast me-1"></i>Broadcasting to donors...</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Column 7: Action / Decision / Cancel Requisition -->
+                        <td>
+                            <div class="d-flex align-items-center gap-1 flex-wrap">
+                                <!-- Option 1: Donor Applied -> Doctor can Accept or Reject -->
+                                {% if req.donor_status == 'donor_applied' %}
+                                    <form action="{{ url_for('hospital_accept_donor', request_id=req.request_id) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success fw-bold shadow-sm" title="Accept Donor">
+                                            <i class="fa-solid fa-check me-1"></i>Accept
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('hospital_reject_donor', request_id=req.request_id) }}" method="POST" class="d-inline" onsubmit="return confirm('Decline this donor? Requisition will be reopened.')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger fw-bold" title="Decline Donor">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+
+                                <!-- Option 2: Doctor Accepted -> Mark Donated (DONE) -->
+                                {% if req.donor_status == 'doctor_accepted' or req.donor_status == 'in_transit' %}
+                                    <form action="{{ url_for('hospital_mark_donated', request_id=req.request_id) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-primary fw-bold shadow-sm" onclick="return confirm('Confirm blood has been safely drawn? Life-Saver Certificate will be issued and 90-day cooldown will start.')">
+                                            <i class="fa-solid fa-check-double me-1"></i>Mark Done
+                                        </button>
+                                    </form>
+                                {% endif %}
+
+                                <!-- Option 3: Gate-Pass PDF -->
+                                {% if req.status == 'approved' or req.status == 'dispatched' %}
+                                    <a href="{{ url_for('download_gatepass', request_id=req.request_id) }}" class="btn btn-sm btn-outline-success fw-bold" title="Download Gate-Pass">
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                    </a>
+                                {% endif %}
+
+                                <!-- Option 4: DELETE / CANCEL REQUISITION (New Feature) -->
+                                {% if req.donor_status != 'donated' %}
+                                    <form action="{{ url_for('cancel_request', request_id=req.request_id) }}" method="POST" class="d-inline" onsubmit="return confirm('Cancel and delete this requisition? It will be permanently removed from the live emergency queue.')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel & Delete Requisition">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            No blood requisitions logged yet. Use the buttons above to raise an Emergency SOS or Blood Bank Restock Drive.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL 1: RAISE EMERGENCY PATIENT SOS (MANDATORY DOCTOR SLIP)   -->
+<!-- ============================================================== -->
+<div class="modal fade" id="emergencyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: 16px;">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>1. Raise Critical Emergency SOS Requisition</h5>
+                <button type="button" class="btn btn-sm btn-outline-light ms-auto me-2 fw-bold" onclick="fillDemoEmergency()">
+                    <i class="fa-solid fa-bolt me-1"></i>1-Click Demo Patient Auto-Fill
+                </button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('create_request') }}" method="POST" enctype="multipart/form-data" onsubmit="return validateEmergencyForm(this)">
+                <input type="hidden" name="urgency" value="emergency">
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger py-2 small border mb-3">
+                        <i class="fa-solid fa-shield-halved me-1"></i><strong>Anti-Abuse Verification:</strong> 
+                        Attending Doctor's Medical Council (MCI) ID and <strong>Signed Prescription Paper (PDF/Image)</strong> are strictly mandatory before broadcast!
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Patient Full Name <span class="text-danger">*</span></label>
+                            <input type="text" name="patient_name" id="demoPatientName" class="form-control" placeholder="e.g. Ramesh Kumar" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Patient IPD / Bed Number <span class="text-danger">*</span></label>
+                            <input type="text" name="patient_ipd" id="demoPatientIpd" class="form-control" placeholder="e.g. IPD-ICU-108" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Required Blood Group <span class="text-danger">*</span></label>
+                            <select name="blood_group" id="demoBloodGroup" class="form-select" required>
+                                {% for bg in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] %}
+                                    <option value="{{ bg }}" {% if bg == 'O-' %}selected{% endif %}>Blood Group {{ bg }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Units Needed (Bags) <span class="text-danger">*</span></label>
+                            <input type="number" name="units" id="demoUnits" class="form-control" value="2" min="1" max="10" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Attending Doctor Name <span class="text-danger">*</span></label>
+                            <input type="text" name="doctor_name" id="demoDoctorName" class="form-control" placeholder="e.g. Dr. V. K. Sharma" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Doctor Medical Council (MCI/NMC) ID <span class="text-danger">*</span></label>
+                            <input type="text" name="doctor_mci_id" id="demoDoctorMci" class="form-control" placeholder="e.g. MCI-DL-2018-99410" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-danger">
+                            <i class="fa-solid fa-file-arrow-up me-1"></i>Doctor's Signed Prescription Paper (PDF/Image) <span class="text-danger">* (Mandatory)</span>
+                        </label>
+                        <input type="file" name="doctor_slip" id="emergencySlipInput" class="form-control border-danger" accept=".pdf,.png,.jpg,.jpeg" required>
+                        <div class="form-text small text-danger fw-bold">
+                            * System will strictly block submission until a valid prescription photo or signed PDF is attached.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger fw-bold"><i class="fa-solid fa-paper-plane me-1"></i>Broadcast Emergency SOS</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL 2: RESTOCK HOSPITAL BLOOD BANK STORAGE (VOLUNTARY DRIVE) -->
+<!-- ============================================================== -->
+<div class="modal fade" id="restockModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius: 16px;">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-boxes-packing me-2"></i>2. Restock Hospital Blood Bank Storage</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('create_restock_drive') }}" method="POST">
+                <div class="modal-body p-4">
+                    <div class="alert alert-info py-2 small border mb-3">
+                        <i class="fa-solid fa-info-circle me-1"></i><strong>Cold Storage Replenishment:</strong> 
+                        Use this when your hospital's internal blood storage units are low. Registered voluntary donors in {{ hospital.city }} will be invited for walk-in donations.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Target Blood Group to Restock <span class="text-danger">*</span></label>
+                        <select name="blood_group" class="form-select" required>
+                            <option value="All">All Groups (Universal Voluntary Camp)</option>
+                            {% for bg in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] %}
+                                <option value="{{ bg }}">Blood Group {{ bg }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Target Units to Collect <span class="text-danger">*</span></label>
+                        <input type="number" name="units" class="form-control" value="5" min="1" max="50" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Restock Drive Title / Reason <span class="text-danger">*</span></label>
+                        <input type="text" name="drive_title" class="form-control" value="Hospital Cold Storage Replenishment Drive" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Attending Blood Bank Officer <span class="text-danger">*</span></label>
+                        <input type="text" name="officer_name" class="form-control" value="{{ hospital.emergency_desk_person }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-bold"><i class="fa-solid fa-bullhorn me-1"></i>Publish Restock Drive to Donors</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function validateEmergencyForm(form) {
+    var fileInput = document.getElementById('emergencySlipInput');
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        alert("Submission Blocked: Attending Doctor's signed prescription paper (PDF or Image) is mandatory before raising an Emergency SOS requisition!");
+        fileInput.focus();
+        return false;
+    }
+    return true;
+}
+
+function fillDemoEmergency() {
+    document.getElementById('demoPatientName').value = "Ramesh Kumar (Trauma Alert)";
+    document.getElementById('demoPatientIpd').value = "IPD-ICU-108";
+    document.getElementById('demoBloodGroup').value = "O-";
+    document.getElementById('demoUnits').value = "2";
+    document.getElementById('demoDoctorName').value = "Dr. V. K. Sharma (CMO)";
+    document.getElementById('demoDoctorMci').value = "MCI-DL-2018-99410";
+}
+</script>
+{% endblock %}

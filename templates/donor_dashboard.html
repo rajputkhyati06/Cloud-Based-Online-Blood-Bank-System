@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% block title %}Donor Dashboard & Rewards Vault | Cloud Blood Bank{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Top Header: Donor Identity Bar -->
+    <div class="card border-0 shadow-sm p-3 p-md-4 mb-4" style="border-radius: 16px; background: linear-gradient(135deg, #ffffff 0%, #FEF2F2 100%);">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center">
+                <div class="blood-group-badge me-3 shadow-sm" style="width: 65px; height: 65px; line-height: 60px; font-size: 1.7rem;">
+                    {{ donor.blood_group }}
+                </div>
+                <div>
+                    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                        <h4 class="fw-bold text-dark mb-0">{{ session.get('full_name') }}</h4>
+                        {% if cert_count >= 10 %}
+                            <span class="badge bg-primary text-white"><i class="fa-solid fa-star me-1"></i>Diamond Legend (50% Off Meds Active)</span>
+                        {% elif cert_count >= 5 %}
+                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-crown me-1"></i>Gold VIP Pass Holder</span>
+                        {% elif cert_count >= 3 %}
+                            <span class="badge bg-secondary text-white"><i class="fa-solid fa-shield-halved me-1"></i>Silver Hero</span>
+                        {% elif cert_count >= 1 %}
+                            <span class="badge bg-danger bg-opacity-75 text-white"><i class="fa-solid fa-medal me-1"></i>Bronze Life-Saver</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark border">First-Time Donor</span>
+                        {% endif %}
+                    </div>
+                    <div class="text-muted small">
+                        <i class="fa-solid fa-house me-1 text-danger"></i>Home Base: <strong>{{ home_city }}</strong> &nbsp;|&nbsp; 
+                        <i class="fa-solid fa-phone me-1"></i>{{ donor.phone }} &nbsp;|&nbsp;
+                        <span class="badge bg-danger text-white"><i class="fa-solid fa-award me-1"></i>{{ cert_count }} Certificates</span> &nbsp;|&nbsp;
+                        <span class="text-dark fw-bold"><i class="fa-solid fa-heart-pulse text-danger me-1"></i>{{ cert_count }} Verified Donations</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 90-Day Medical Cooldown Badge (Compact Header Widget) -->
+            <div class="text-md-end">
+                <span class="badge {% if is_eligible_now %}bg-success{% else %}bg-warning text-dark{% endif %} fs-6 px-3 py-2">
+                    <i class="fa-solid {% if is_eligible_now %}fa-circle-check{% else %}fa-clock-rotate-left{% endif %} me-1"></i>
+                    {% if is_eligible_now %}Ready to Donate{% else %}{{ days_remaining }} Days Cooldown{% endif %}
+                </span>
+                <div class="small text-muted mt-1">
+                    {% if is_eligible_now %}100% Medically Eligible{% else %}Next Safe Date: {{ next_eligible_date }}{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Travel / Roaming Hero Mode Widget -->
+    <div class="card border-0 shadow-sm p-3 mb-4 bg-white border-start border-4 border-warning" style="border-radius: 14px;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <div class="p-2 bg-warning bg-opacity-25 text-warning rounded-circle">
+                    <i class="fa-solid fa-plane-departure text-dark fa-lg"></i>
+                </div>
+                <div>
+                    <div class="fw-bold text-dark d-flex align-items-center gap-2 flex-wrap">
+                        <span>Travel / Roaming Hero Mode 🧳</span>
+                        {% if active_city != home_city %}
+                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-location-dot me-1"></i>Currently Visiting {{ active_city }}</span>
+                            <a href="{{ url_for('donor_dashboard', city=home_city) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.8rem;">
+                                <i class="fa-solid fa-house me-1"></i>Return to Home ({{ home_city }})
+                            </a>
+                        {% else %}
+                            <span class="badge bg-light text-muted border"><i class="fa-solid fa-house me-1"></i>At Home Base ({{ home_city }})</span>
+                        {% endif %}
+                    </div>
+                    <div class="text-muted small">
+                        Traveling to another city? Switch radar to save lives in that city while traveling!
+                    </div>
+                </div>
+            </div>
+
+            <!-- City Switcher Form (Input + Datalist Suggestions: User can type ANY city!) -->
+            <form action="{{ url_for('donor_dashboard') }}" method="GET" class="d-flex align-items-center gap-2 m-0 flex-wrap">
+                <label class="fw-bold small text-dark mb-0 d-none d-sm-inline"><i class="fa-solid fa-crosshairs text-danger me-1"></i>Active Radar City:</label>
+                <div class="input-group input-group-sm shadow-sm" style="min-width: 220px; max-width: 300px;">
+                    <span class="input-group-text bg-light border-warning text-danger"><i class="fa-solid fa-location-arrow"></i></span>
+                    <input type="text" name="city" class="form-control border-warning fw-bold" list="donorTravelCities" value="{{ active_city }}" placeholder="Type or pick any city..." required>
+                    <datalist id="donorTravelCities">
+                        <option value="Delhi">📍 Delhi (Home Base)</option>
+                        <option value="Jaipur">🧳 Jaipur (Rajasthan)</option>
+                        <option value="Noida">🧳 Noida (UP)</option>
+                        <option value="Lucknow">🧳 Lucknow (UP)</option>
+                        <option value="Mumbai">🧳 Mumbai (Maharashtra)</option>
+                        <option value="Chandigarh">🧳 Chandigarh (Punjab)</option>
+                        <option value="Bangalore">🧳 Bangalore (Karnataka)</option>
+                        <option value="Pune">🧳 Pune (Maharashtra)</option>
+                        <option value="Agra">🧳 Agra (UP)</option>
+                        <option value="Kanpur">🧳 Kanpur (UP)</option>
+                        <option value="All">🌐 All Cities (Nationwide)</option>
+                    </datalist>
+                    <button type="submit" class="btn btn-warning fw-bold text-dark px-3"><i class="fa-solid fa-arrow-right me-1"></i>Set</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- ============================================================== -->
+        <!-- LEFT COLUMN: CERTIFICATES VAULT, REWARDS, & VOLUNTARY CENTERS  -->
+        <!-- ============================================================== -->
+        <div class="col-lg-6">
+            <!-- 1. Click-to-Expand Certificates Vault (Clean & Uncluttered!) -->
+            <div class="card border-0 shadow-sm p-3 mb-4" style="border-radius: 16px;">
+                <div class="d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#certVaultCollapse" aria-expanded="false" style="cursor: pointer;">
+                    <div class="d-flex align-items-center">
+                        <div class="p-2 bg-danger bg-opacity-10 text-danger rounded-circle me-3">
+                            <i class="fa-solid fa-award fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">My Official Certificates Vault</h6>
+                            <small class="text-muted">
+                                {% if cert_count > 0 %}
+                                    <span class="text-success fw-bold">{{ cert_count }} Certificates</span> • Click to open & download
+                                {% else %}
+                                    Locked • Unlocks after doctor verifies your donation
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge bg-danger rounded-pill me-2">{{ cert_count }}</span>
+                        <i class="fa-solid fa-chevron-down text-muted"></i>
+                    </div>
+                </div>
+
+                <!-- Collapsible Vault Content (Opens only when clicked!) -->
+                <div class="collapse mt-3 pt-3 border-top" id="certVaultCollapse">
+                    {% if certificates_vault %}
+                        <div class="d-grid gap-2">
+                            {% for cert in certificates_vault %}
+                            <div class="p-3 rounded-3 border {% if cert.certificate_type == 'emergency' %}border-danger bg-danger bg-opacity-10{% else %}border-success bg-success bg-opacity-10{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        {% if cert.certificate_type == 'emergency' %}
+                                            <span class="badge bg-danger text-uppercase mb-1"><i class="fa-solid fa-triangle-exclamation me-1"></i>CRITICAL EMERGENCY LIFE-SAVER</span>
+                                        {% else %}
+                                            <span class="badge bg-success text-uppercase mb-1"><i class="fa-solid fa-hand-holding-heart me-1"></i>VOLUNTARY GOODWILL DONATION</span>
+                                        {% endif %}
+                                        <h6 class="fw-bold text-dark mb-1">{{ cert.recipient_hospital }}</h6>
+                                        <div class="small text-muted mb-1">
+                                            Issue Date: <strong>{{ cert.formatted_date }}</strong> &nbsp;|&nbsp; 
+                                            Code: <code>{{ cert.certificate_code }}</code>
+                                        </div>
+                                        {% if cert.patient_name %}
+                                        <div class="small text-danger fw-semibold">
+                                            <i class="fa-solid fa-user-shield me-1"></i>Saved Patient: {{ cert.patient_name }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="ms-2">
+                                        <a href="{{ url_for('download_certificate', cert_id=cert.certificate_id) }}" class="btn btn-sm btn-outline-dark fw-bold">
+                                            <i class="fa-solid fa-file-pdf me-1"></i>PDF
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3 text-muted small">
+                            <i class="fa-solid fa-lock text-secondary me-1"></i>No certificates yet. Donate blood to unlock your official verified awards!
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 2. Click-to-Expand Milestone Rewards Section (Clean & Uncluttered!) -->
+            <div class="card border-0 shadow-sm p-3 mb-4" style="border-radius: 16px;">
+                <div class="d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#rewardsCollapse" aria-expanded="false" style="cursor: pointer;">
+                    <div class="d-flex align-items-center">
+                        <div class="p-2 bg-warning bg-opacity-25 text-dark rounded-circle me-3">
+                            <i class="fa-solid fa-id-card-clip fa-lg text-danger"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">Elite Life-Saver Rewards & Passes</h6>
+                            <small class="text-muted">
+                                Based on Certificates (Progress: <span class="fw-bold text-danger">{{ cert_count }}/5</span> & <span class="fw-bold text-primary">{{ cert_count }}/10</span>) • Click to open
+                            </small>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge bg-warning text-dark rounded-pill me-2 fw-bold">{{ cert_count }}/10</span>
+                        <i class="fa-solid fa-chevron-down text-muted"></i>
+                    </div>
+                </div>
+
+                <!-- Collapsible Rewards Content (Opens only when clicked!) -->
+                <div class="collapse mt-3 pt-3 border-top" id="rewardsCollapse">
+                    <p class="text-muted small mb-3">Rewards are unlocked strictly based on the number of verified certificates earned in your vault:</p>
+
+                    <div class="d-grid gap-3">
+                        <!-- Milestone 1: VIP Priority Zero-Queue Medical Pass (5 Certificates) -->
+                        <div class="p-3 rounded-3 border {% if vip_family_pass_unlocked %}bg-warning bg-opacity-10 border-warning border-2{% else %}bg-light opacity-75{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="p-2 bg-warning rounded-circle text-dark me-2">
+                                        <i class="fa-solid fa-crown"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold mb-0 text-dark">VIP Zero-Queue Medical Pass</h6>
+                                        <small class="text-muted">Requires 5 Verified Certificates (Progress: {{ cert_count }}/5)</small>
+                                    </div>
+                                </div>
+                                <div>
+                                    {% if vip_family_pass_unlocked %}
+                                        <span class="badge bg-warning text-dark fw-bold"><i class="fa-solid fa-check-circle me-1"></i>ACTIVE</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary"><i class="fa-solid fa-lock me-1"></i>{{ 5 - cert_count if cert_count < 5 else 0 }} to Unlock</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="small text-secondary">
+                                <strong>Rule:</strong> Skip all registration and appointment lines at partner hospitals! 
+                                <span class="text-dark fw-semibold">Valid strictly for Self and first-degree blood relations (Parents, Siblings, Spouse, Children) only.</span>
+                            </div>
+                            {% if vip_family_pass_unlocked %}
+                                <div class="p-2 mt-2 bg-white rounded border font-monospace text-center small text-dark fw-bold">
+                                    PASS CODE: <span class="text-danger">VIP-ZERO-QUEUE-FAMILY-{{ donor.donor_id }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Milestone 2: 50% Flat Off Pharmacy Medicine Card (10 Certificates) -->
+                        <div class="p-3 rounded-3 border {% if pharmacy_50_unlocked %}bg-primary bg-opacity-10 border-primary border-2{% else %}bg-light opacity-75{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="p-2 bg-primary rounded-circle text-white me-2">
+                                        <i class="fa-solid fa-percent"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold mb-0 text-dark">50% Off Lifetime Pharmacy Card</h6>
+                                        <small class="text-muted">Requires 10 Verified Certificates (Progress: {{ cert_count }}/10)</small>
+                                    </div>
+                                </div>
+                                <div>
+                                    {% if pharmacy_50_unlocked %}
+                                        <span class="badge bg-primary text-white fw-bold"><i class="fa-solid fa-check-circle me-1"></i>ACTIVE</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary"><i class="fa-solid fa-lock me-1"></i>{{ 10 - cert_count if cert_count < 10 else 0 }} to Unlock</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="small text-secondary">
+                                <strong>Rule:</strong> Next 5 certificates (10 total) unlock flat <strong>50% off on all prescription medicines</strong> across all partner pharmacies!
+                            </div>
+                            {% if pharmacy_50_unlocked %}
+                                <div class="p-2 mt-2 bg-white rounded border font-monospace text-center small text-dark fw-bold">
+                                    CARD CODE: <span class="text-primary">PHARMA-50-LIFETIME-{{ donor.donor_id }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Nearby Voluntary Blood Banks & Availability Settings -->
+            <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 16px;">
+                <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-hospital text-danger me-2"></i>Nearby Voluntary Blood Banks ({{ active_city }})</h6>
+                <p class="text-muted small">Walk in anytime in {{ active_city }} to donate voluntarily and earn certificates:</p>
+                
+                <div class="list-group list-group-flush mb-3">
+                    {% for bank in nearby_blood_banks %}
+                    <div class="list-group-item px-0 py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong class="text-dark small d-block">{{ bank.blood_bank_name }}</strong>
+                                <small class="text-muted"><i class="fa-solid fa-clock me-1"></i>{{ bank.timing }} | <i class="fa-solid fa-phone me-1"></i>{{ bank.phone }}</small>
+                            </div>
+                            <span class="badge bg-light text-dark border">Walk-In</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Alert Toggles -->
+                <form action="{{ url_for('update_donor_status') }}" method="POST" class="pt-2 border-top">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="is_available" id="availSwitch" {% if donor.is_available %}checked{% endif %} onchange="this.form.submit()">
+                        <label class="form-check-label small fw-bold" for="availSwitch">
+                            Available for Emergency Broadcasts
+                        </label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="night_available" id="nightSwitch" {% if donor.night_emergency_available %}checked{% endif %} onchange="this.form.submit()">
+                        <label class="form-check-label small fw-bold" for="nightSwitch">
+                            <i class="fa-solid fa-moon text-warning me-1"></i>24x7 Night Emergency Hero (1 AM - 5 AM)
+                        </label>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- RIGHT COLUMN: EMERGENCY BROADCAST FEED & IN-PLACE GPS MAP     -->
+        <!-- ============================================================== -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm p-4 h-100" style="border-radius: 16px;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-tower-broadcast text-danger me-2"></i>Emergency Triage Feed ({{ active_city }})
+                    </h6>
+                    <span class="badge bg-danger rounded-pill">LIVE CLOUD RADAR</span>
+                </div>
+                <p class="text-muted small">
+                    Scanning active trauma alerts in <strong>{{ active_city }}</strong> matching your blood group ({{ donor.blood_group }}):
+                </p>
+
+                <!-- 1. If Donor has an Active In-Transit / Volunteer Mission -->
+                {% if active_mission %}
+                    {% if active_mission.donor_status == 'donor_applied' %}
+                    <div class="p-3 mb-4 rounded-3 border-2 border-warning bg-warning bg-opacity-10 border shadow-sm">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="badge bg-warning text-dark text-uppercase mb-2"><i class="fa-solid fa-hourglass-half me-1"></i>VOLUNTEER RESPONSE SENT</span>
+                                <h5 class="fw-bold text-dark mb-1">{{ active_mission.hospital_name }}</h5>
+                                <p class="small text-secondary mb-1">
+                                    Patient: <strong>{{ active_mission.patient_name }}</strong> (Bed: {{ active_mission.patient_ipd_number }}) &nbsp;|&nbsp;
+                                    Attending Doctor: <strong>{{ active_mission.doctor_name }}</strong>
+                                </p>
+                                <div class="small text-dark fw-bold mb-1">
+                                    <i class="fa-solid fa-clock me-1 text-warning"></i>Awaiting Doctor Confirmation...
+                                </div>
+                                <div class="small text-muted">
+                                    Dr. {{ active_mission.doctor_name }} has been notified at the Emergency Desk. Once they confirm, your live navigation route will appear right here!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-3 mb-4 rounded-3 border-2 border-success bg-success bg-opacity-10 border shadow-sm">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="badge bg-success text-uppercase mb-2 animate-pulse"><i class="fa-solid fa-person-running me-1"></i>DOCTOR CONFIRMED: PROCEED TO ER!</span>
+                                <h5 class="fw-bold text-dark mb-1">{{ active_mission.hospital_name }}</h5>
+                                <p class="small text-secondary mb-1">
+                                    Patient: <strong>{{ active_mission.patient_name }}</strong> (Bed: {{ active_mission.patient_ipd_number }}) &nbsp;|&nbsp;
+                                    Attending Doctor: <strong>{{ active_mission.doctor_name }}</strong>
+                                </p>
+                                <div class="small text-success fw-bold mb-2">
+                                    <i class="fa-solid fa-circle-check me-1"></i>Doctor confirmed your volunteer slot! Please report to Emergency Room directly.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-top border-success border-opacity-25 d-flex justify-content-between align-items-center">
+                            <small class="text-muted"><i class="fa-solid fa-phone me-1"></i>{{ active_mission.emergency_desk_contact }}</small>
+                            <a href="{{ active_mission.google_maps_url }}" target="_blank" class="btn btn-sm btn-success fw-bold shadow-sm">
+                                <i class="fa-solid fa-location-arrow me-1"></i>Open Google Maps Route 📍
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endif %}
+
+                <!-- 2. Type 1: Critical Emergency Alerts (if any) -->
+                {% if emergency_alerts %}
+                    <div class="mb-3">
+                        <span class="small fw-bold text-danger text-uppercase d-block mb-2">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>1. Critical Trauma Patient Emergencies:
+                        </span>
+                        <div class="list-group mb-3">
+                            {% for alert in emergency_alerts %}
+                            <div class="list-group-item border-danger border-2 rounded-3 mb-3 p-3 bg-danger bg-opacity-10">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="badge bg-danger text-uppercase mb-1"><i class="fa-solid fa-triangle-exclamation me-1"></i>CRITICAL SOS</span>
+                                        <h6 class="fw-bold text-dark mb-1">{{ alert.hospital_name }}</h6>
+                                        <p class="small mb-1 text-secondary">
+                                            Patient: <strong>{{ alert.patient_name }}</strong> (Bed: {{ alert.patient_ipd_number }}) &nbsp;|&nbsp;
+                                            Doctor: <strong>{{ alert.doctor_name }}</strong>
+                                        </p>
+                                        <div class="small text-danger fw-semibold">
+                                            <i class="fa-solid fa-droplet me-1"></i>Need: {{ alert.units_requested }} Units of <strong>{{ alert.blood_group }}</strong>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            <i class="fa-solid fa-phone me-1"></i>Desk: {{ alert.emergency_desk_contact }}
+                                        </div>
+                                    </div>
+                                    <div class="text-end ms-2">
+                                        <form action="{{ url_for('accept_emergency', request_id=alert.request_id) }}" method="POST">
+                                            <button type="submit" class="btn btn-sm btn-danger fw-bold">
+                                                <i class="fa-solid fa-paper-plane me-1"></i>I Am Coming!
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- 3. Type 2: Hospital Blood Bank Storage Restock Drives (if any) -->
+                {% if restock_drives %}
+                    <div class="mb-3">
+                        <span class="small fw-bold text-primary text-uppercase d-block mb-2">
+                            <i class="fa-solid fa-boxes-packing me-1"></i>2. Hospital Blood Bank Storage Restocking Drives:
+                        </span>
+                        <div class="list-group mb-3">
+                            {% for drive in restock_drives %}
+                            <div class="list-group-item border-primary border-2 rounded-3 mb-3 p-3 bg-primary bg-opacity-10">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="badge bg-primary text-uppercase mb-1"><i class="fa-solid fa-hospital-user me-1"></i>COLD STORAGE REPLENISHMENT</span>
+                                        <h6 class="fw-bold text-dark mb-1">{{ drive.hospital_name }}</h6>
+                                        <p class="small mb-1 text-secondary">
+                                            Drive: <strong>{{ drive.patient_name }}</strong> &nbsp;|&nbsp;
+                                            In-Charge: <strong>{{ drive.doctor_name }}</strong>
+                                        </p>
+                                        <div class="small text-primary fw-semibold">
+                                            <i class="fa-solid fa-droplet me-1"></i>Target: {{ drive.units_requested }} Units of <strong>{{ drive.blood_group }}</strong>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            <i class="fa-solid fa-phone me-1"></i>ER Helpline: {{ drive.emergency_desk_contact }}
+                                        </div>
+                                    </div>
+                                    <div class="text-end ms-2">
+                                        <form action="{{ url_for('accept_emergency', request_id=drive.request_id) }}" method="POST">
+                                            <button type="submit" class="btn btn-sm btn-primary fw-bold">
+                                                <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteer Walk-In
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if not active_mission and not emergency_alerts and not restock_drives %}
+                    <div class="text-center py-5">
+                        <i class="fa-solid fa-shield-heart fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No open emergency alerts or restock drives in {{ active_city }} right now.</h6>
+                        <small class="text-secondary">Either you are on an active mission, or hospitals currently have sufficient stock.</small>
+                    </div>
+                {% endif %}
+
+                <!-- 3. Simulated Cloud Email / SMS Notification Preview -->
+                <div class="mt-auto p-3 bg-light rounded-3 border">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small fw-bold text-dark"><i class="fa-solid fa-envelope-open-text text-danger me-1"></i>Cloud Email Dispatch Preview (Donor Inbox)</span>
+                        <span class="badge bg-secondary font-monospace">cloud-alert-service</span>
+                    </div>
+                    <div class="bg-white p-3 rounded border small font-monospace">
+                        <div class="text-muted">From: <strong>emergency-alerts@cloudblood.org</strong></div>
+                        <div class="text-muted">To: <strong>{{ session.get('full_name') }} ({{ donor.email }})</strong></div>
+                        <div class="text-danger fw-bold mt-1">Subject: 🚨 URGENT: Critical Need for {{ donor.blood_group }} Blood in {{ donor.city }}</div>
+                        <hr class="my-2">
+                        <div>"Dear <strong>{{ session.get('full_name') }}</strong>, an emergency trauma surgery at local trauma center requires your certified blood type (<strong>{{ donor.blood_group }}</strong>). Cold storage stock has reached critical threshold. Please check your dashboard or click 'I Am Coming' to save a life today."</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
